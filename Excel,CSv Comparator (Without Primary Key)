@@ -1,0 +1,329 @@
+
+import pandas as pd
+import numpy as np
+
+
+# Mention the Source file name
+
+#Source_file = str(r'C:\Users\kzsl099\Documents\DST\RAVE DB to CSV\Source\Metadata-Formdef\D5180C00007_Metadata_20413_FormDef_20200928_005215.800.csv')
+Source_file = str(r'C:\Users\kzsl099\Downloads\SRC1.xlsx')
+
+# Mention the Target file name
+
+#Target_file = str(r'C:\Users\kzsl099\Documents\DST\RAVE DB to CSV\Target - Rave\D5180C00007_Metadata_20413_FormDef.xlsx')
+Target_file = str(r'C:\Users\kzsl099\Downloads\TGT1.xlsx')
+
+
+
+Output = str(Source_file)
+
+
+
+
+# Getting the File name to be used in the Test Result File
+
+
+
+Output = Target_file.split('\\')[4].split('.')[0]+'Test'
+print(Output)
+Output1 = str(Output+'_Comp.xlsx')
+
+Output2 = str(Output+'_Comp.txt')
+
+print(Output1)
+
+
+# Setting the path for the output files (Result set ) to be stored
+
+
+path = (r'C:\Users\kzsl099\Documents\DST\RAVE DB to CSV\Test Result RWS'+'\\'+ Output1)
+path2 = (r'C:\Users\kzsl099\Documents\DST\RAVE DB to CSV\Test Result RWS'+'\\'+ Output2)
+print(path)
+
+
+
+# Read Source and Target file and Convert into Data Frame
+# use pd.read_csv for csv files and use pd.read_excel for Excel files
+
+
+#df1 = pd.read_csv(Source_file)
+df1 = pd.read_excel(Source_file)
+#df1= df1.iloc[:, 0:(len(df1.columns)-2)]
+df1= df1.fillna('')
+df1 = df1.astype(str)
+
+#df1 = df1.astype(str)
+print(df1)
+
+df1.dtypes
+
+#Target = pd.read_csv(Target_file)
+df2 = pd.read_excel(Target_file)
+df2= df2.iloc[:, 0:(len(df2.columns)-2)]
+df2= df2.fillna('')
+df2 = df2.astype(str)
+
+
+print(df2)
+
+
+
+
+
+#df2 = df2.astype(str)
+
+df5 = df1
+df6 = df2
+
+
+
+# Removing Duplicates
+
+df7 = pd.concat([df5, df6], axis=0 , ignore_index=True)
+
+
+
+#print(df7)
+
+df8 = df7.drop_duplicates(keep=False , ignore_index= False)
+
+df8 = df8.replace('nan', '')
+
+#print(df5)
+#df2.dtypes
+
+
+
+header_list =  df1.columns.tolist()
+
+print(header_list)
+
+header_list1 =  df2.columns.tolist()
+
+print(header_list1)
+
+
+duplicateRowsDF = df2[df2.duplicated()]
+
+print(duplicateRowsDF)
+
+
+
+
+# Concatenating all the values in the Source and Target Dataframes and storing it in a new column called "Combined"
+
+
+
+df5['Combined']= df1[header_list].apply(lambda row: ''.join(row.values.astype(str)), axis=1)
+df5 = df5.filter(['Combined'], axis=1)
+df5 = df5.replace(' ','')
+print(df5)
+
+df6['Combined']= df2[header_list1].apply(lambda row: ''.join(row.values.astype(str)), axis=1)
+df6 = df6.filter(['Combined'], axis=1)
+df6 = df6.replace(" ",'')
+print(df6)
+
+
+# Checking whether the first(iterate till last value) value in the Combined column of the Source Datafram is available in the Combined column in Target
+
+
+list1 = []
+
+for x in range(len(df5)):
+    list1.append(str(df5.values[x] in df6.Combined.values))
+
+#print(list1)
+
+df1 = df1.assign(Comparison=list1)
+
+
+len(list1)
+
+
+# Checking whether the first(iterate till last value) value in the Combined column of the Target Datafram is available in the Combined column in Source
+
+list2 = []
+
+for x in range(len(df6)):
+    list2.append(str(df6.values[x] in df5.Combined.values))
+
+
+len(list2)
+
+#print((list1))
+df2 = df2.assign(Comparison=list2)
+
+print(df1)
+print(df2)
+
+
+
+src_cnt = len(df1)
+tgt_cnt = len(df2)
+
+
+# Giving Comments based on the Results
+
+
+if len(df1) == len(df2):
+
+
+    Extra = 'Both Source Count and Target Count are equal'
+
+    Extra1 = 'No Extra Records present'
+
+
+
+elif len(df1) > len(df2):
+
+
+    Extra = 'Source File has more records than Target CSV'
+
+    Extra1 = 'Extra Records present in Source'
+
+
+
+else:
+
+
+    Extra = 'Target CSV has more records than Source CSV'
+
+    Extra1 = 'Extra Records present in Target'
+
+
+
+
+
+
+
+
+
+#print(df8_1)
+
+
+count = {'Source CSV' : [src_cnt],'Targt CSV' : [tgt_cnt] ,'Comment':[Extra]}
+print(count)
+#print(count)
+df9 = pd.DataFrame(count,columns = ['Source CSV','Targt CSV','Comment'])
+
+
+src_mismatch = df1[(df1.Comparison == "False")]
+
+print(src_mismatch)
+
+
+tgt_mismatch = df2[(df2.Comparison == "False")]
+
+print(tgt_mismatch)
+
+#len(df9)
+
+len(duplicateRowsDF)
+len(tgt_mismatch)
+len(src_mismatch)
+
+
+
+# Generating the test Report based on the Result set
+
+
+if (len(duplicateRowsDF) == 0) & (len(tgt_mismatch) == 0) & (len(src_mismatch) == 0)  :
+
+    print('#############################################################################################################')
+    print('                                                                                                             ')
+    print('                                  No Mismatch and Duplicates found                                           ')
+    print('                                       Validation Passed                                                     ')
+    print('                                                                                                             ')
+    print('#############################################################################################################')
+
+    result = open(path2, "x")
+    result1 = open(path2, "w")
+    result1.write('#############################################################################################################'+'\n')
+    result1.write('                                                                                                             '+'\n')
+    result1.write('                                  No Mismatch and Duplicates found                                           '+'\n')
+    result1.write('                                       Validation Passed                                                     '+'\n')
+    result1.write('                                                                                                             '+'\n')
+    result1.write('#############################################################################################################'+'\n')
+    result1.close()
+
+elif (len(duplicateRowsDF) != 0) & (len(tgt_mismatch) == 0) & (len(src_mismatch) == 0) :
+
+    print('#############################################################################################################')
+    print('                                                                                                             ')
+    print('                                       Duplicates found                                                      ')
+    print('                                     Validation Failed !!!                                                   ')
+    print('                                                                                                             ')
+    print('#############################################################################################################')
+
+    writer = pd.ExcelWriter(path, engine='xlsxwriter')
+
+    df9.to_excel(writer, 'Comp Report', startrow=0, header=True, index=False)
+
+    duplicateRowsDF.to_excel(writer, 'Comp Report', startrow=(len(df9) + 4), header=True, index=False)
+
+    worksheet = writer.sheets['Comp Report']
+    worksheet.write(len(df9), 0, 'Duplicate Records')
+    writer.save()
+
+elif (len(duplicateRowsDF) == 0) & (len(tgt_mismatch) != 0) & (len(src_mismatch) != 0) :
+
+    print('#############################################################################################################')
+    print('                                                                                                             ')
+    print('                                        Mismactch found                                                      ')
+    print('                                     Validation Failed !!!                                                   ')
+    print('                                                                                                             ')
+    print('#############################################################################################################')
+
+
+    writer = pd.ExcelWriter(path, engine='xlsxwriter')
+
+    df9.to_excel(writer, 'Comp Report', startrow=0, header=True, index=False)
+
+
+    src_mismatch.to_excel(writer, 'Comp Report', startrow=len(df9) + 4 + len(duplicateRowsDF) + 8, header=True,
+                          index=False)
+    tgt_mismatch.to_excel(writer, 'Comp Report',
+                          startrow=len(df9) + 4 + len(duplicateRowsDF) + 6 + len(src_mismatch) + 6, header=True,
+                          index=False)
+
+    worksheet = writer.sheets['Comp Report']
+    worksheet.write(2, 0, 'No Duplicate Records')
+    worksheet.write(len(df9) + 4 + len(duplicateRowsDF) + 3, 0, 'Mismatch and Missing Records')
+
+    worksheet.write(len(df9) + 4 + len(duplicateRowsDF) + 6, 0, 'Source Mismatch')
+
+    worksheet.write(len(df9) + 4 + len(duplicateRowsDF) + 8 + len(src_mismatch) + 2, 0, 'Target Mismatch')
+
+    writer.save()
+
+else :
+
+    print('#############################################################################################################')
+    print('                                                                                                             ')
+    print('                                  Duplicates and Mismactch found                                             ')
+    print('                                       Validation Failed !!!                                                 ')
+    print('                                                                                                             ')
+    print('#############################################################################################################')
+
+    writer = pd.ExcelWriter(path, engine='xlsxwriter')
+
+    df9.to_excel(writer, 'Comp Report', startrow=0, header=True, index=False)
+    # Sum1.to_excel(writer, 'Summary', startrow=7, header=True, index=False)
+    duplicateRowsDF.to_excel(writer, 'Comp Report', startrow=(len(df9) + 4), header=True, index=False)
+
+    src_mismatch.to_excel(writer, 'Comp Report', startrow=len(df9) + 4 + len(duplicateRowsDF) + 8, header=True,
+                          index=False)
+    tgt_mismatch.to_excel(writer, 'Comp Report',
+                          startrow=len(df9) + 4 + len(duplicateRowsDF) + 8 + len(src_mismatch) + 4, header=True,
+                          index=False)
+
+    worksheet = writer.sheets['Comp Report']
+    worksheet.write(2, 0, 'Duplicate Records')
+    worksheet.write(len(df9) + 4 + len(duplicateRowsDF) + 3, 0, 'Mismatch and Missing Records')
+
+    worksheet.write(len(df9) + 4 + len(duplicateRowsDF) + 6, 0, 'Source Mismatch')
+
+    worksheet.write(len(df9) + 4 + len(duplicateRowsDF) + 8 + len(src_mismatch) + 2, 0, 'Target Mismatch')
+
+    writer.save()
